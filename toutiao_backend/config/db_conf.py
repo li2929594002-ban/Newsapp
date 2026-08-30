@@ -1,11 +1,20 @@
 # 导包
+from pathlib import Path
+
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine,async_sessionmaker,AsyncSession
 import os
 
-# 数据库URL
+# 加载项目根目录下的 .env（真实密码不入库，模板见 .env.example；Docker 部署时由 compose 直接注入 DATABASE_URL）
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
+# 数据库URL（默认值不含密码，密码一律来自环境变量）
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = os.getenv("DB_PORT", "3306")
+DB_NAME = os.getenv("MYSQL_DATABASE", "news_app")
 ASYNC_DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "mysql+aiomysql://root:123456@localhost:3306/news_app?charset=utf8mb4"
+    f"mysql+aiomysql://root:{os.getenv('MYSQL_ROOT_PASSWORD', '')}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
 )
 
 # 创建异步引擎
