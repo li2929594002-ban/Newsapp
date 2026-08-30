@@ -10,12 +10,12 @@ async def get_current_user(
         authorization : str = Header(..., alias = "Authorization"),
         db:AsyncSession = Depends(get_db)
 ):
+    # 按 "方案 凭证" 格式解析，方案名不区分大小写（RFC 6750）
+    parts = authorization.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "无效的令牌或已经过期的令牌")
 
-    # token = authorization.split(" ")[0]
-    token = authorization.replace("Bearer ","")
-    # token = authorization
-
-    user = await users.get_user_by_token(db, token)
+    user = await users.get_user_by_token(db, parts[1])
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "无效的令牌或已经过期的令牌")
 
