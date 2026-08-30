@@ -48,10 +48,9 @@
 <script setup>
 import { ref, onMounted, nextTick, watch } from 'vue';
 import TabBar from '../components/TabBar.vue';
-import { showToast } from 'vant';
 import * as marked from 'marked';
 import DOMPurify from 'dompurify';
-import { aiChatConfig } from '../config/api';
+import { apiConfig } from '../config/api';
 
 // 聊天消息
 const messages = ref([
@@ -61,10 +60,8 @@ const userInput = ref('');
 const messagesContainer = ref(null);
 const isLoading = ref(false);
 
-// 从配置文件获取API设置
-const apiEndpoint = ref(aiChatConfig.apiEndpoint);
-const apiKey = ref(aiChatConfig.apiKey);
-const model = ref(aiChatConfig.model);
+// AI问答走后端代理接口，API Key保存在后端环境变量中
+const chatEndpoint = ref(`${apiConfig.baseURL}/api/ai/chat`);
 
 // 格式化消息内容（支持Markdown）
 const formatMessage = (content) => {
@@ -76,12 +73,6 @@ const formatMessage = (content) => {
 // 发送消息
 const sendMessage = async () => {
   if (!userInput.value.trim() || isLoading.value) return;
-  
-  // 检查API设置
-  if (!apiKey.value || apiKey.value === 'your-api-key-here') {
-    showToast('API Key未配置，请联系管理员');
-    return;
-  }
   
   // 添加用户消息
   const userMessage = userInput.value.trim();
@@ -117,14 +108,12 @@ const fetchAIResponse = async (userMessage) => {
     .map(msg => ({ role: msg.role, content: msg.content }));
   
   try {
-    const response = await fetch(apiEndpoint.value, {
+    const response = await fetch(chatEndpoint.value, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey.value}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: model.value,
         messages: allMessages,
         stream: true
       })
@@ -132,7 +121,7 @@ const fetchAIResponse = async (userMessage) => {
     
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error?.message || `HTTP error! status: ${response.status}`);
+      throw new Error(error.detail || `HTTP error! status: ${response.status}`);
     }
     
     // 处理SSE流
@@ -176,7 +165,7 @@ const fetchAIResponse = async (userMessage) => {
   
   // 如果没有收到任何内容
   if (!aiResponse) {
-    messages.value[messages.value.length - 1].content = '抱歉，我无法生成回复。请检查API设置或稍后再试。';
+    messages.value[messages.value.length - 1].content = '抱歉，我无法生成回复。请稍后再试。';
   }
   } catch (error) {
     console.error('Fetch error:', error);
