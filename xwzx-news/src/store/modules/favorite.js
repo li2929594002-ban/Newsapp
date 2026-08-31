@@ -88,12 +88,13 @@ export const useFavoriteStore = defineStore('favorite', {
         }
       } catch (error) {
         console.error('添加收藏请求失败:', error);
-        return { success: false, message: '网络请求失败' };
+        // 透传后端业务提示（如"该新闻已收藏"），仅在网络异常时使用兜底文案
+        return { success: false, message: error.response?.data?.message || '网络请求失败' };
       } finally {
         this.loading = false;
       }
     },
-    
+
     // 取消收藏 - API请求
     async removeFavoriteApi(newsId) {
       const userStore = useUserStore();
@@ -146,31 +147,30 @@ export const useFavoriteStore = defineStore('favorite', {
     },
     
     // 切换收藏状态 - 结合API和本地
+    // 返回 { success, favorited } 或 { success: false, message }
     async toggleFavorite(news) {
       // 确保news对象存在且有id属性
       if (!news || !news.id) {
         console.error('无效的新闻对象:', news);
-        return null;
+        return { success: false, message: '无效的新闻数据' };
       }
-      
+
       if (this.isFavorite(news.id)) {
         // 取消收藏
         const result = await this.removeFavoriteApi(news.id);
         if (result.success) {
           this.removeFavorite(news.id);
-          return false;
-        } else {
-          return null; // 返回null表示操作失败
+          return { success: true, favorited: false };
         }
+        return { success: false, message: result.message };
       } else {
         // 添加收藏
         const result = await this.addFavoriteApi(news.id);
         if (result.success) {
           this.addFavorite(news);
-          return true;
-        } else {
-          return null; // 返回null表示操作失败
+          return { success: true, favorited: true };
         }
+        return { success: false, message: result.message };
       }
     },
     

@@ -111,22 +111,17 @@ const toggleFavorite = async () => {
   }
   
   // 已登录则调用API切换收藏状态
-  const status = await favoriteStore.toggleFavorite(newsStore.newsDetail)
+  const result = await favoriteStore.toggleFavorite(newsStore.newsDetail)
   
-  if (status === true) {
+  if (result.success) {
     showToast({
-      message: '已添加到收藏',
-      position: 'bottom',
-    })
-  } else if (status === false) {
-    showToast({
-      message: '已取消收藏',
+      message: result.favorited ? '已添加到收藏' : '已取消收藏',
       position: 'bottom',
     })
   } else {
-    // status为null表示操作失败
+    // 展示后端返回的具体业务提示（如"该新闻已收藏，请勿重复操作"）
     showToast({
-      message: '操作失败，请稍后重试',
+      message: result.message || '操作失败，请稍后重试',
       position: 'bottom',
     })
   }

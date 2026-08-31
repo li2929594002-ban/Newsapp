@@ -29,6 +29,10 @@ async def add_favorite(
         user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
+    # 查重：已收藏时给出准确业务提示，避免触发唯一约束后被全局异常处理器误判为"用户名已存在"
+    if await favorite.is_news_favorite(db, user.id, data.news_id):
+        raise HTTPException(status_code = status.HTTP_400_BAD_REQUEST, detail = "该新闻已收藏，请勿重复操作")
+
     new_favorite = await favorite.add_news_favorite(db, user.id, data.news_id)
     return success_response(message = "添加收藏成功", data = FavoriteAddResponse.model_validate(new_favorite))
 
