@@ -42,11 +42,6 @@
             登录
           </van-button>
         </div>
-        
-        <div class="login-tips">
-          <p>测试账号：admin</p>
-          <p>测试密码：123456</p>
-        </div>
       </van-form>
     </div>
   </div>
@@ -137,16 +132,5 @@ const onClickLeft = () => {
 
 .submit-btn {
   margin: 24px 16px;
-}
-
-.login-tips {
-  text-align: center;
-  color: #969799;
-  font-size: 14px;
-  margin-top: 16px;
-}
-
-.login-tips p {
-  margin: 8px 0;
 }
 </style>
