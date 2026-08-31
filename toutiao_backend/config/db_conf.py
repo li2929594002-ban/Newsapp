@@ -17,10 +17,13 @@ ASYNC_DATABASE_URL = os.getenv(
     f"mysql+aiomysql://root:{os.getenv('MYSQL_ROOT_PASSWORD', '')}@{DB_HOST}:{DB_PORT}/{DB_NAME}?charset=utf8mb4"
 )
 
+# 调试开关：与 exception.py 保持一致，仅本地开发开启（控制 SQL 日志输出，防止生产环境日志泄露SQL与数据）
+DEBUG_MODE = os.getenv("DEBUG", "false").lower() == "true"
+
 # 创建异步引擎
 async_engine = create_async_engine(
     ASYNC_DATABASE_URL,
-    echo = True,       # 可选，输出 SQL 日志
+    echo = DEBUG_MODE, # 开启后输出 SQL 日志，仅调试使用
     pool_size = 10,    # 设置连接池中保持的持久连接数
     max_overflow = 20  # 设置连接池允许创建的额外连接数
 )

@@ -62,20 +62,6 @@ async def get_favorite_list(
     # 别名：Favorite.created_at.label("favorite_time")
     skip = (page - 1) * page_size
 
-
-    # # 写法1：
-    # stmt = (select(News, Favorite.created_at.label("favorite_time"), Favorite.id.label("favorite_id"))
-    #         .join(Favorite, Favorite.news_id == News.id)
-    #         .where(Favorite.user_id == user_id)
-    #         .order_by(Favorite.created_at.desc())
-    #         .offset(skip)
-    #         .limit(page_size))
-    # result = await db.execute(stmt)
-    # rows = result.all()
-    # return rows, total
-
-
-    # 写法2：
     stmt = (select(News, Favorite.created_at.label("favorite_time"), Favorite.id.label("favorite_id"))
             .join(Favorite,Favorite.news_id == News.id)
             .where(Favorite.user_id == user_id)

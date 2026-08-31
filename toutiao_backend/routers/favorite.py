@@ -56,20 +56,6 @@ async def get_favorite_list(
         user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    # # 写法1：
-    # rows, total = await favorite.get_favorite_list(db, user.id, page, page_size)
-    # favorite_list = [{
-    #     **news.__dict__,
-    #     "favorite_time": favorite_time,
-    #     "favorite_id": favorite_id
-    # } for news, favorite_time, favorite_id in rows]
-    # has_more = page * page_size < total
-    #
-    # data = FavoriteListResponse(list = favorite_list, total = total, hasMore = has_more)
-    # return success_response(message = "success", data = data)
-
-
-    # 写法2：
     favorite_list, total= await favorite.get_favorite_list(db, user.id, page, page_size)
 
     # ( 跳过的 + 当前列表里面的数量) <  总量
