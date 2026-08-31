@@ -47,10 +47,16 @@
 
 <script setup>
 import { ref, onMounted, nextTick, watch } from 'vue';
+import { useRouter } from 'vue-router';
+import { showToast } from 'vant';
 import TabBar from '../components/TabBar.vue';
 import * as marked from 'marked';
 import DOMPurify from 'dompurify';
 import { apiConfig } from '../config/api';
+import { useUserStore } from '../store/user';
+
+const router = useRouter();
+const userStore = useUserStore();
 
 // 聊天消息
 const messages = ref([
@@ -73,7 +79,14 @@ const formatMessage = (content) => {
 // 发送消息
 const sendMessage = async () => {
   if (!userInput.value.trim() || isLoading.value) return;
-  
+
+  // AI问答需登录：后端接口已开启鉴权，未登录直接引导去登录页
+  if (!userStore.getLoginStatus) {
+    showToast({ message: '请先登录后再使用AI问答', position: 'bottom' });
+    router.push('/login');
+    return;
+  }
+
   // 添加用户消息
   const userMessage = userInput.value.trim();
   messages.value.push({ role: 'user', content: userMessage });
@@ -111,7 +124,9 @@ const fetchAIResponse = async (userMessage) => {
     const response = await fetch(chatEndpoint.value, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // 携带登录令牌，后端鉴权通过后才代理转发AI请求
+        'Authorization': `Bearer ${userStore.token}`
       },
       body: JSON.stringify({
         messages: allMessages,

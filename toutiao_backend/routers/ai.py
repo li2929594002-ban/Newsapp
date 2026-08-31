@@ -1,9 +1,11 @@
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from config import ai_conf
+from models.users import User
 from schemas.ai import AIChatRequest
+from utils.auth import get_current_user
 
 # 创建 APIRouter 实例
 router = APIRouter(prefix = "/api/ai", tags = ["ai"])
@@ -15,8 +17,12 @@ router = APIRouter(prefix = "/api/ai", tags = ["ai"])
 
 
 # AI 问答：后端代理转发，隐藏 API Key
+# 需登录后调用：防止未鉴权的恶意刷量消耗 AI 服务额度
 @router.post("/chat")
-async def ai_chat(chat_data:AIChatRequest):
+async def ai_chat(
+        chat_data:AIChatRequest,
+        user: User = Depends(get_current_user)
+):
     # 校验 Key 是否已配置
     if not ai_conf.AI_API_KEY:
         raise HTTPException(status_code=500, detail = "AI服务未配置，请联系管理员")
