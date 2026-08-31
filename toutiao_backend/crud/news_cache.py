@@ -1,5 +1,5 @@
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select, func, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cache.news_cache import get_cached_categories, set_cache_categories, get_cache_news_list, set_cache_news_list, \
@@ -51,20 +51,10 @@ async def get_news_list(db:AsyncSession,category_id:int,page:int = 1, page_size:
     return news_list
 
 
-async def get_news_count(db:AsyncSession,category_id:int):
-    # 查询的是指定分类下的新闻数量
-    total_stmt = select(func.count(News.id)).where(News.category_id == category_id)
-    total = await db.scalar(total_stmt)
-    return total
-
-
 async def get_news_detail(db:AsyncSession, news_id:int):
     # 先尝试从缓存中获取新闻详情
     cached_detail = await get_cached_news_detail(news_id)
     if cached_detail:
-        # 缓存数据可能包含 related_news，需要过滤掉（News 模型没有这个字段）
-        # filtered_detail = {k:v for k,v in cached_detail.items() if k != "related_news"}
-        # return News(**filtered_detail)
         return News(**cached_detail)
 
     stmt = select(News).where(News.id == news_id)
@@ -79,14 +69,6 @@ async def get_news_detail(db:AsyncSession, news_id:int):
             mode="json", by_alias = False,exclude ={'related_news'})
         await cache_news_detail(news_id, news_dict)
     return news
-
-
-async def increase_news_views(db:AsyncSession, news_id:int):
-    stmt = update(News).where(News.id == news_id).values(views = News.views + 1)
-    result = await db.execute(stmt)
-
-    # 更新 -> 检查数据库是否真的命中了数据 -> 命中了返回True
-    return result.rowcount > 0
 
 
 async def get_related_news(db:AsyncSession, news_id:int, category_id:int, limit:int = 5):
@@ -105,7 +87,6 @@ async def get_related_news(db:AsyncSession, news_id:int, category_id:int, limit:
         News.publish_time.desc()
     ).limit(limit))
     result = await db.execute(stmt)
-    # return result.scalars().all()
     related_news = result.scalars().all()
 
     # 写入缓存
@@ -117,16 +98,3 @@ async def get_related_news(db:AsyncSession, news_id:int, category_id:int, limit:
 
     # 没有相关新闻，返回空列表
     return []
-
-
-    # 列表推导式 推导出新闻的核心数据，然后再 return
-    # return [{
-    #     "id": news.id,
-    #     "title": news.title,
-    #     "content": news.content,
-    #     "image": news.image,
-    #     "author": news.author,
-    #     "publishTime": news.publish_time,
-    #     "categoryId": news.category_id,
-    #     "views": news.views
-    # } for news in related_news]
