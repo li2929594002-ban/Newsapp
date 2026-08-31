@@ -58,9 +58,10 @@ async def update_password(
         user:User = Depends(get_current_user),
         db:AsyncSession = Depends(get_db)
 ):
-    res_change_pwd = await users.change_password(db, user, password_data.old_password, password_data.new_password)
-    if not res_change_pwd:
+    # 修改密码成功后返回轮换后的新 Token（旧 Token 已失效）
+    new_token = await users.change_password(db, user, password_data.old_password, password_data.new_password)
+    if not new_token:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail = "修改密码失败，请稍后再试")
 
-    return success_response(message="修改密码成功")
+    return success_response(message="修改密码成功", data = {"token": new_token})
 

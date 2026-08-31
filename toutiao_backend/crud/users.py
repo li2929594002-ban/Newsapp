@@ -101,10 +101,10 @@ async def update_user(db:AsyncSession, user:User, user_data:UserUpdateRequest):
     return updated_user
 
 
-# 修改密码：验证旧密码 → 新密码加密 → 修改密码
+# 修改密码：验证旧密码 → 新密码加密 → 修改密码 → 轮换Token
 async def change_password(db:AsyncSession, user:User, old_password:str, new_password:str):
     if not security.verify_password(old_password,user.password):
-        return False
+        return None
 
     hasher_new_pwd = security.get_hash_password(new_password)
     user.password = hasher_new_pwd
@@ -115,4 +115,6 @@ async def change_password(db:AsyncSession, user:User, old_password:str, new_pass
     #（可选）若需要拿到 update_time 等库端生成值，再 refresh
     # await db.refresh(user)
 
-    return True
+    # 改密成功后轮换 Token：旧 Token 立即失效，防止已泄露的旧凭证继续使用
+    new_token = await create_token(db, user.id)
+    return new_token

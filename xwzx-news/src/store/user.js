@@ -214,6 +214,11 @@ export const useUserStore = defineStore('user', {
         
         // 检查响应状态
         if (response.data && response.data.code === 200) {
+          // 后端改密成功后轮换了Token（旧Token已失效），保存新Token保持登录态
+          const newToken = response.data.data?.token;
+          if (newToken) {
+            this.token = newToken;
+          }
           return {
             success: true,
             message: '密码修改成功'
