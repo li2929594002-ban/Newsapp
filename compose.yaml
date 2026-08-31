@@ -24,6 +24,7 @@ services:
       REDIS_HOST: "redis"
       AI_API_KEY: "${AI_API_KEY:?请先复制 .env.example 为 .env 并配置 AI_API_KEY}"
       AI_MODEL: "${AI_MODEL:-deepseek-chat}"
+      DEBUG: "${DEBUG:-false}"
     ports: ["8000:8000"]    # 留着方便看 /docs
     depends_on:
       mysql:

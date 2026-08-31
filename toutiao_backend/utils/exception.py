@@ -1,13 +1,19 @@
+import os
 import traceback
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from starlette import status
 
-# 开发模式：返回详细错误信息
-# 生产模式：返回简化错误信息
-DEBUG_MODE = True  # 教学项目保持开启
+# 加载项目根目录下的 .env（与 db_conf 保持一致，模块自包含）
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
+# 调试开关：开启时错误响应附带 traceback 等内部信息，仅限本地开发使用
+# 默认关闭，生产环境必须保持关闭，防止内部实现细节泄露给客户端
+DEBUG_MODE = os.getenv("DEBUG", "false").lower() == "true"
 
 
 async def http_exception_handler(request: Request, exc: HTTPException):
