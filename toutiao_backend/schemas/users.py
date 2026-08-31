@@ -3,8 +3,9 @@ from pydantic import BaseModel, Field, ConfigDict
 
 
 class UserRequest(BaseModel):
-    username: str = Field(..., description="用户名")
-    password: str = Field(..., description="密码")
+    # 长度约束与 DB 字段一致：username String(50)；密码与改密接口统一 min_length=6
+    username: str = Field(..., min_length=2, max_length=50, description="用户名")
+    password: str = Field(..., min_length=6, max_length=64, description="密码")
 
 
 # user_info 对应的类: 基础类 + Info类(id、用户名)
