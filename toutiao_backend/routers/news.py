@@ -19,7 +19,7 @@ router = APIRouter(prefix = "/api/news",tags = ["news"])
 # 4.在路由处理函数里面调用 crud 封装好的方法，响应结果
 
 @router.get("/categories")
-async def get_categories(skip:int = 0, limit:int = 100,db:AsyncSession = Depends(get_db)):
+async def get_categories(skip:int = Query(0,ge=0), limit:int = Query(100,ge=1,le=100),db:AsyncSession = Depends(get_db)):
     # 先获取数据库里面新闻分类数据 ——> 先定义模型类 ——> 封装查询数据的方法
     categories = await news_cache.get_categories(db,skip,limit)
     return {
@@ -31,8 +31,8 @@ async def get_categories(skip:int = 0, limit:int = 100,db:AsyncSession = Depends
 @router.get("/list",response_model=NewsListResponse)
 async def get_news_list(
         category_id:int = Query(...,description="分类ID",alias = "categoryId"),
-        page:int = Query(1,description="页码"),
-        page_size:int = Query(10,le=100,description="每页显示的新闻数量",alias = "pageSize"),
+        page:int = Query(1,ge=1,description="页码"),
+        page_size:int = Query(10,ge=1,le=100,description="每页显示的新闻数量",alias = "pageSize"),
         db:AsyncSession = Depends(get_db)
 ):
     # 思路：处理分页规则 ——> 查询新闻列表 ——> 计算总量 ——> 计算是否还有更多
