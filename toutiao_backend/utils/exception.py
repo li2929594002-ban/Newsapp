@@ -31,19 +31,37 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
+# 唯一约束名 → 用户提示 映射表：新增表/约束时在此登记即可
+# MySQL 报错格式：Duplicate entry 'xxx' for key '库名.表名.约束名'，用约束名做子串匹配
+UNIQUE_CONSTRAINT_MESSAGES = {
+    "username_UNIQUE": "用户名已存在",
+    "phone_UNIQUE": "该手机号已被绑定",
+    "token_UNIQUE": "令牌冲突，请重试",
+    "user_news_unique": "该新闻已收藏，请勿重复操作",
+}
+
+
 async def integrity_error_handler(request: Request, exc: IntegrityError):
     """
     处理数据库完整性约束错误
     """
     error_msg = str(exc.orig)
 
-    # 判断具体的约束错误类型
-    if "username_UNIQUE" in error_msg or "Duplicate entry" in error_msg:
-        detail = "用户名已存在"
-    elif "FOREIGN KEY" in error_msg:
-        detail = "关联数据不存在"
-    else:
-        detail = "数据约束冲突，请检查输入"
+    # 优先按唯一约束名精确映射，避免把手机号/收藏等冲突误判为"用户名已存在"
+    detail = None
+    for constraint_name, message in UNIQUE_CONSTRAINT_MESSAGES.items():
+        if constraint_name in error_msg:
+            detail = message
+            break
+
+    # 未登记的约束走兜底分支
+    if detail is None:
+        if "FOREIGN KEY" in error_msg:
+            detail = "关联数据不存在"
+        elif "Duplicate entry" in error_msg:
+            detail = "数据已存在，请勿重复提交"
+        else:
+            detail = "数据约束冲突，请检查输入"
 
     # 开发模式下返回详细错误信息
     error_data = None
