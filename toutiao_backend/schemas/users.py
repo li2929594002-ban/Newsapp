@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Literal
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -42,12 +42,14 @@ class UserAuthResponse(BaseModel):
 
 
 # 更新用户信息的模型类
+# 长度约束与 DB 字段一致（String(50)/String(255)/String(500)/String(20)），超长在参数校验层返回422而非数据库500
+# gender 与 DB Enum('male','female','unknown') 对齐，非法值同样在参数校验层拦截
 class UserUpdateRequest(BaseModel):
-    nickname:str = None
-    avatar:str = None
-    gender:str = None
-    bio:str = None
-    phone:str = None
+    nickname: Optional[str] = Field(None, min_length=1, max_length=50, description="昵称")
+    avatar: Optional[str] = Field(None, max_length=255, description="头像URL")
+    gender: Optional[Literal['male', 'female', 'unknown']] = Field(None, description="性别")
+    bio: Optional[str] = Field(None, max_length=500, description="个人简介")
+    phone: Optional[str] = Field(None, min_length=1, max_length=20, description="手机号")
 
 
 class UserChangePasswordRequest(BaseModel):
