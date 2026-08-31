@@ -30,8 +30,9 @@ class User(Base):
     gender: Mapped[Optional[str]] = mapped_column(Enum('male', 'female', 'unknown'), comment="性别", default='unknown')
     bio: Mapped[Optional[str]] = mapped_column(String(500), comment="个人简介", default='这个人很懒，什么都没留下')
     phone: Mapped[Optional[str]] = mapped_column(String(20), unique=True, comment="手机号")
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(), comment="创建时间")
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now(), onupdate=datetime.now(),
+    # default 传 callable（不带括号）：每条记录创建时才求值；带括号会在模块导入时固定为进程启动时间
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, comment="创建时间")
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, onupdate=datetime.now,
                                                  comment="更新时间")
 
 
@@ -55,7 +56,7 @@ class UserToken(Base):
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey(User.id), nullable = False, comment="用户ID")
     token: Mapped[str] = mapped_column(String(255), unique = True, nullable = False, comment="令牌值")
     expires_at: Mapped[datetime] = mapped_column(DateTime, nullable = False, comment="过期时间")
-    created_at: Mapped[datetime] = mapped_column(DateTime,default=datetime.now(), comment="创建时间")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, comment="创建时间")
 
     def __repr__(self):
         return f"<UserToken(id={self.id}, user_id={self.user_id}, token='{self.token}')>"
