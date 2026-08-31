@@ -63,6 +63,9 @@ async def get_news_detail(news_id:int = Query(...,alias = "id"), db:AsyncSession
     if not views_res:
         raise HTTPException(status_code=404,detail = "新闻不存在")
 
+    # 浏览量以数据库自增后的最新值为准（详情/缓存中的 views 会滞后）
+    latest_views = await news.get_news_views(db,news_detail.id)
+
     related_news = await news_cache.get_related_news(db,news_detail.id,news_detail.category_id)
     return {
       "code": 200,
@@ -75,7 +78,7 @@ async def get_news_detail(news_id:int = Query(...,alias = "id"), db:AsyncSession
         "author": news_detail.author,
         "publishTime": news_detail.publish_time,
         "categoryId": news_detail.category_id,
-        "views": news_detail.views,
+        "views": latest_views,
         "relatedNews": related_news
       }
 }

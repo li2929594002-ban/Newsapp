@@ -16,3 +16,8 @@ async def increase_news_views(db:AsyncSession, news_id:int):
 
     # 更新 -> 检查数据库是否真的命中了数据 -> 命中了返回True
     return result.rowcount > 0
+
+
+async def get_news_views(db:AsyncSession, news_id:int):
+    # 单独查询最新浏览量：详情可能来自缓存（views滞后），浏览量展示以数据库为准
+    return await db.scalar(select(News.views).where(News.id == news_id))
