@@ -22,9 +22,10 @@ class NewsItem(BaseModel):
     model_config = ConfigDict(from_attributes = True)
 
 class NewsListData(BaseModel):
-    list:list[NewsItem]
-    total:int
-    hasMore:bool
+    # 列表响应使用轻量的 NewsItemBase，不带 content/created_at/updated_at 大字段
+    list: list[NewsItemBase]
+    total: int
+    hasMore: bool
 
 class NewsListResponse(BaseModel):
     code:int = 200

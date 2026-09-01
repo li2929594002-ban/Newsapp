@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from cache.news_cache import get_cached_categories, set_cache_categories, get_cache_news_list, set_cache_news_list, \
     get_cached_news_detail, cache_news_detail, get_cached_related_news, cache_related_news
 from models.news import Category,News
-from schemas.news import NewsItem, NewsDetailResponse, RelatedNewsResponse
+from schemas.news import NewsDetailResponse, RelatedNewsResponse
+from schemas.base import NewsItemBase
 
 
 async def get_categories(db:AsyncSession, skip:int = 0, limit:int = 100):
@@ -44,9 +45,8 @@ async def get_news_list(db:AsyncSession,category_id:int,page:int = 1, page_size:
     # 写入缓存
     if news_list:
         # 先把 ORM 数据 转换 字典 才能写入缓存
-        # ORM 转成 Pydantic，再转为字典
-        # by_alias = False 不使用别名，保存Python风格，因为 Redis 数据是给后端用的
-        news_data = [NewsItem.model_validate(item).model_dump(mode="json", by_alias = False) for item in news_list]
+        # ORM 转成轻量 NewsItemBase（不带 content）再转字典：列表不需要全文，省带宽和 Redis 内存
+        news_data = [NewsItemBase.model_validate(item).model_dump(mode="json", by_alias = False) for item in news_list]
         await set_cache_news_list(category_id, page, page_size, news_data)
         return news_data
 

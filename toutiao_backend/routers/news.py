@@ -5,7 +5,7 @@ from schemas import news
 from crud import news
 from crud import news_cache
 from config.db_conf import get_db
-from schemas.news import NewsListResponse, NewsItem
+from schemas.news import NewsListResponse
 
 # 创建 APIRouter 实例
 # prefix 路由前缀 (API接口规范文档)
