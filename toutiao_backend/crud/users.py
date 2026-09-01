@@ -87,10 +87,14 @@ async def update_user(db:AsyncSession, user:User, user_data:UserUpdateRequest):
     # update(User).where(User.id == user.id).values(字段=值, 字段=值)
     # user_data 是一个 Pydantic类型，得到字典 → **解包      user_data.model_dump()可以把Pydantic类型转换成字典
     # 没有设置值的不更新
-    query = update(User).where(User.id == user.id).values(**user_data.model_dump(
-        exclude_unset = True,   # 字典里剔除值为 None 的字段
-        exclude_none = True     # 只保留用户显式赋值的字段；自动剔除仅使用模型默认值、从未手动设置过的字段
-    ))
+    update_data = user_data.model_dump(exclude_unset=True, exclude_none=True)
+
+    # 空 payload 保护：前端传 {} 或所有字段均未赋值时，直接返回当前用户
+    # 避免 update().values(**{}) 触发 SQLAlchemy 异常 → 500
+    if not update_data:
+        return user
+
+    query = update(User).where(User.id == user.id).values(**update_data)
 
     result = await db.execute(query)
 

@@ -29,10 +29,11 @@ async def get_categories(db:AsyncSession, skip:int = 0, limit:int = 100):
 
 async def get_news_list(db:AsyncSession,category_id:int,page:int = 1, page_size:int = 10):
     # 先尝试从缓存中获取新闻列表
-    cached_list = await get_cache_news_list(category_id, page, page_size)    # 缓存数据 json
+    cached_list = await get_cache_news_list(category_id, page, page_size)    # 缓存数据 dict 列表
     if cached_list:
-        # return cached_list  # 要的是 ORM
-        return [News(**item) for item in cached_list]
+        # 直接返回 dict 列表，response_model 的 Pydantic schema 能直接消费 dict
+        # 之前硬塞给 News() 构造器是无谓的反序列化：ORM 对象是 detached 状态，后续也不会 flush
+        return cached_list
 
     # 查询的是指定分类下的所有新闻
     skip = (page-1) * page_size
@@ -47,28 +48,32 @@ async def get_news_list(db:AsyncSession,category_id:int,page:int = 1, page_size:
         # by_alias = False 不使用别名，保存Python风格，因为 Redis 数据是给后端用的
         news_data = [NewsItem.model_validate(item).model_dump(mode="json", by_alias = False) for item in news_list]
         await set_cache_news_list(category_id, page, page_size, news_data)
+        return news_data
 
-    return news_list
+    # 无数据返回空列表
+    return []
 
 
 async def get_news_detail(db:AsyncSession, news_id:int):
     # 先尝试从缓存中获取新闻详情
     cached_detail = await get_cached_news_detail(news_id)
     if cached_detail:
-        return News(**cached_detail)
+        # 直接返回 dict，省去无谓的 News() 反序列化（ORM 对象 detached 后无实际用途）
+        return cached_detail
 
     stmt = select(News).where(News.id == news_id)
     result = await db.execute(stmt)
     news = result.scalar_one_or_none()
 
-    # 如果查询到数据，存入缓存（不使用别名，保持数据库字段名）
+    # 如果查询到数据，统一转为 dict 并写入缓存
     if news:
         # 构造新闻详情数据用于缓存（包含 content 字段）
-        # news_dict = {k:v for k,v in news.__dict__.items() if not k.startswith("_")}
-        news_dict = NewsDetailResponse.model_validate(news).model_dump(
+        detail_dict = NewsDetailResponse.model_validate(news).model_dump(
             mode="json", by_alias = False,exclude ={'related_news'})
-        await cache_news_detail(news_id, news_dict)
-    return news
+        await cache_news_detail(news_id, detail_dict)
+        return detail_dict
+
+    return None
 
 
 async def get_related_news(db:AsyncSession, news_id:int, category_id:int, limit:int = 5):

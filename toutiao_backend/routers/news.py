@@ -59,25 +59,25 @@ async def get_news_detail(news_id:int = Query(...,alias = "id"), db:AsyncSession
     if not news_detail:
         raise HTTPException(status_code=404,detail = "新闻不存在")
 
-    views_res = await news.increase_news_views(db,news_detail.id)
+    views_res = await news.increase_news_views(db, news_detail["id"])
     if not views_res:
         raise HTTPException(status_code=404,detail = "新闻不存在")
 
     # 浏览量以数据库自增后的最新值为准（详情/缓存中的 views 会滞后）
-    latest_views = await news.get_news_views(db,news_detail.id)
+    latest_views = await news.get_news_views(db, news_detail["id"])
 
-    related_news = await news_cache.get_related_news(db,news_detail.id,news_detail.category_id)
+    related_news = await news_cache.get_related_news(db, news_detail["id"], news_detail["category_id"])
     return {
       "code": 200,
       "message": "success",
       "data": {
-        "id": news_detail.id,
-        "title": news_detail.title,
-        "content": news_detail.content,
-        "image": news_detail.image,
-        "author": news_detail.author,
-        "publishTime": news_detail.publish_time,
-        "categoryId": news_detail.category_id,
+        "id": news_detail["id"],
+        "title": news_detail["title"],
+        "content": news_detail["content"],
+        "image": news_detail["image"],
+        "author": news_detail["author"],
+        "publishTime": news_detail["publish_time"],
+        "categoryId": news_detail["category_id"],
         "views": latest_views,
         "relatedNews": related_news
       }

@@ -30,5 +30,5 @@ class Favorite(Base):
     news_id: Mapped[int] = mapped_column(Integer, ForeignKey(News.id), nullable=False, comment="新闻ID")
     created_at: Mapped[datetime] = mapped_column(DateTime, default= lambda:datetime.now(UTC), nullable=False, comment="收藏时间")
 
-def __repr__(self):
-    return f"<Favorite(id={self.id}, user_id={self.user_id}, news_id={self.news_id}, created_at={self.created_at})>"
+    def __repr__(self):
+        return f"<Favorite(id={self.id}, user_id={self.user_id}, news_id={self.news_id}, created_at={self.created_at})>"
