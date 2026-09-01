@@ -11,3 +11,5 @@ build/
 # IDE 配置文件
 .idea/
 .vscode/
+*.xml
+*.iml
