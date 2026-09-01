@@ -1,25 +1,8 @@
-from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from schemas.base import NewsItemBase
 
-
-class NewsItem(BaseModel):
-    id: int
-    publish_time: datetime
-    created_at: datetime
-    updated_at: datetime
-    title: str
-    description: str
-    content: str
-    image: Optional[str] = None
-    author: Optional[str] = None
-    category_id: int
-    views:int
-
-    # 开启ORM模式：支持直接接收SQLAlchemy对象自动转换
-    model_config = ConfigDict(from_attributes = True)
 
 class NewsListData(BaseModel):
     # 列表响应使用轻量的 NewsItemBase，不带 content/created_at/updated_at 大字段
