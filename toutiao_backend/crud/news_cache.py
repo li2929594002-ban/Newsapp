@@ -1,5 +1,5 @@
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from cache.news_cache import get_cached_categories, set_cache_categories, get_cache_news_list, set_cache_news_list, \
@@ -29,12 +29,11 @@ async def get_categories(db:AsyncSession, skip:int = 0, limit:int = 100):
     return categories
 
 async def get_news_list(db:AsyncSession,category_id:int,page:int = 1, page_size:int = 10):
-    # 先尝试从缓存中获取新闻列表
-    cached_list = await get_cache_news_list(category_id, page, page_size)    # 缓存数据 dict 列表
-    if cached_list:
-        # 直接返回 dict 列表，response_model 的 Pydantic schema 能直接消费 dict
-        # 之前硬塞给 News() 构造器是无谓的反序列化：ORM 对象是 detached 状态，后续也不会 flush
-        return cached_list
+    # 先尝试从缓存中获取新闻列表 + total（一次 Redis GET 搞定）
+    cached = await get_cache_news_list(category_id, page, page_size)
+    if cached:
+        # 缓存命中：直接返回 {"list": [...], "total": N}
+        return cached
 
     # 查询的是指定分类下的所有新闻
     skip = (page-1) * page_size
@@ -42,16 +41,19 @@ async def get_news_list(db:AsyncSession,category_id:int,page:int = 1, page_size:
     result = await db.execute(list_stmt)
     news_list = result.scalars().all()
 
-    # 写入缓存
+    # 计算总量（缓存未命中时才查一次库）
+    total_stmt = select(func.count(News.id)).where(News.category_id == category_id)
+    total = await db.scalar(total_stmt)
+
+    # 写入缓存：list + total 一起存，保证 TTL 同步
     if news_list:
-        # 先把 ORM 数据 转换 字典 才能写入缓存
         # ORM 转成轻量 NewsItemBase（不带 content）再转字典：列表不需要全文，省带宽和 Redis 内存
         news_data = [NewsItemBase.model_validate(item).model_dump(mode="json", by_alias = False) for item in news_list]
-        await set_cache_news_list(category_id, page, page_size, news_data)
-        return news_data
+        await set_cache_news_list(category_id, page, page_size, news_data, total)
+    else:
+        news_data = []
 
-    # 无数据返回空列表
-    return []
+    return {"list": news_data, "total": total}
 
 
 async def get_news_detail(db:AsyncSession, news_id:int):

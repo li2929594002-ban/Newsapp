@@ -22,15 +22,19 @@ async def set_cache_categories(data: List[Dict[str, Any]], expire:int = 7200):
     return await set_cache(CATEGORIES_KEY, data, expire)
 
 
-# 写入缓存 — 新闻列表   key = news_list:分类id:页码:每页数量   + 列表数据 + 过期时间
-async def set_cache_news_list(category_id:Optional[int], page:int, size:int, news_list:List[Dict[str, Any]], expire:int = 1800):
+# 写入缓存 — 新闻列表   key = news_list:分类id:页码:每页数量
+# value 同时包含 list 和 total：一次 Redis GET 搞定，避免 total 单独查库
+async def set_cache_news_list(category_id:Optional[int], page:int, size:int, news_list:List[Dict[str, Any]], total:int, expire:int = 1800):
     # 调用封装的 Redis 的设置方法，存新闻列表到缓存
     category_part = category_id if category_id is not None else "all"
     key = f"{NEWS_LIST_PREFIX}{category_part}:{page}:{size}"
-    return await set_cache(key, news_list, expire)
+    # 包装 list 和 total 为一个 dict，保证 TTL 同步、一次 GET 拿到全部
+    payload = {"list": news_list, "total": total}
+    return await set_cache(key, payload, expire)
 
 
 # 读取缓存 — 新闻列表
+# 返回 {"list": [...], "total": N}，未命中返回 None
 async def get_cache_news_list(category_id:Optional[int], page:int, size:int):
     category_part = category_id if category_id is not None else "all"
     key = f"{NEWS_LIST_PREFIX}{category_part}:{page}:{size}"
