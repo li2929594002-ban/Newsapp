@@ -6,6 +6,7 @@ from config import ai_conf
 from models.users import User
 from schemas.ai import AIChatRequest
 from utils.auth import get_current_user
+from utils.rate_limit import ai_rate_limit
 
 # 创建 APIRouter 实例
 router = APIRouter(prefix = "/api/ai", tags = ["ai"])
@@ -17,11 +18,12 @@ router = APIRouter(prefix = "/api/ai", tags = ["ai"])
 
 
 # AI 问答：后端代理转发，隐藏 API Key
-# 需登录后调用：防止未鉴权的恶意刷量消耗 AI 服务额度
+# 需登录后调用 + 每用户每分钟限 N 次：防止未鉴权刷量 + 登录态滥用消耗额度
 @router.post("/chat")
 async def ai_chat(
         chat_data:AIChatRequest,
-        user: User = Depends(get_current_user)
+        user: User = Depends(get_current_user),
+        _: None = Depends(ai_rate_limit)
 ):
     # 校验 Key 是否已配置
     if not ai_conf.AI_API_KEY:

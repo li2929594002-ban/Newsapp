@@ -10,3 +10,8 @@ AI_API_KEY = os.getenv("AI_API_KEY", "")
 
 # 使用的模型
 AI_MODEL = os.getenv("AI_MODEL", "deepseek-chat")
+
+# AI 问答限流配置：每用户在指定窗口内最多调用次数
+# 固定窗口 Redis INCR + EXPIRE 实现，已登录用户按 user_id 限流
+AI_RATE_LIMIT = int(os.getenv("AI_RATE_LIMIT", "5"))       # 窗口内允许次数
+AI_RATE_WINDOW = int(os.getenv("AI_RATE_WINDOW", "60"))    # 窗口秒数
