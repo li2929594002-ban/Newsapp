@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from crud import news_cache
+from crud import news, news_cache
 from config.db_conf import get_db
 from schemas.news import NewsListResponse
 

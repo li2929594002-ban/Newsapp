@@ -32,7 +32,13 @@ async def get_news_list(db:AsyncSession,category_id:int,page:int = 1, page_size:
     # 先尝试从缓存中获取新闻列表 + total（一次 Redis GET 搞定）
     cached = await get_cache_news_list(category_id, page, page_size)
     if cached:
-        # 缓存命中：直接返回 {"list": [...], "total": N}
+        # 兼容旧缓存格式：之前只存了纯列表 [{...}, {...}]，现在存 {"list": [...], "total": N}
+        # 旧格式命中时查一次 count 补上 total，同时按新格式回写缓存
+        if isinstance(cached, list):
+            total_stmt = select(func.count(News.id)).where(News.category_id == category_id)
+            total = await db.scalar(total_stmt)
+            await set_cache_news_list(category_id, page, page_size, cached, total)
+            return {"list": cached, "total": total}
         return cached
 
     # 查询的是指定分类下的所有新闻
